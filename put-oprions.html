@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Put Strategy Coach</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0e1a;
+            --surface: #111827;
+            --surface2: #1a2235;
+            --border: #1e2d45;
+            --text: #e2e8f0;
+            --muted: #64748b;
+            --accent: #38bdf8;
+            --accent2: #0ea5e9;
+            --safe: #22c55e;
+            --warn: #f59e0b;
+            --danger: #ef4444;
+            --mono: 'Space Mono', monospace;
+            --sans: 'DM Sans', sans-serif;
+        }
+        [data-theme="light"] {
+            --bg: #f0f4f8;
+            --surface: #ffffff;
+            --surface2: #e8f0f7;
+            --border: #cbd5e1;
+            --text: #0f172a;
+            --muted: #64748b;
+            --accent: #0284c7;
+            --accent2: #0369a1;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 40px 20px;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse 60% 40% at 70% 20%, rgba(56,189,248,0.06) 0%, transparent 70%),
+                        radial-gradient(ellipse 40% 60% at 20% 80%, rgba(34,197,94,0.04) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .card {
+            position: relative;
+            z-index: 1;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 560px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 28px;
+            background: var(--surface2);
+            border-radius: 12px;
+            padding: 4px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: var(--surface);
+            color: var(--accent);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .tab-btn:hover:not(.active) { color: var(--text); }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Docs */
+        .doc-section { margin-bottom: 28px; }
+        .doc-section:last-child { margin-bottom: 0; }
+        .doc-section-title {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        .doc-block {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--text);
+        }
+        .doc-block:last-child { margin-bottom: 0; }
+        .doc-block strong {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--text);
+        }
+        .doc-block p { color: var(--muted); font-size: 13.5px; }
+        .doc-formula {
+            font-family: var(--mono);
+            font-size: 13px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-top: 10px;
+            color: var(--accent);
+            line-height: 1.8;
+        }
+        .doc-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        .doc-table th {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            text-align: left;
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .doc-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 13px;
+        }
+        .doc-table tr:last-child td { border-bottom: none; }
+        .doc-table td:first-child { color: var(--muted); }
+        .pill {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-family: var(--mono);
+            font-weight: 700;
+        }
+        .pill-safe   { background: rgba(34,197,94,0.12);  color: var(--safe); }
+        .pill-warn   { background: rgba(245,158,11,0.12); color: var(--warn); }
+        .pill-danger { background: rgba(239,68,68,0.12);  color: var(--danger); }
+        .doc-note {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            background: rgba(56,189,248,0.06);
+            border: 1px solid rgba(56,189,248,0.15);
+            border-radius: 10px;
+            padding: 14px 16px;
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+        .doc-note-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 36px;
+        }
+        .header-title {
+            display: flex;
+            flex-direction: column;
+        }
+        .header-eyebrow {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: 0.15em;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        h2 {
+            font-family: var(--mono);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.2;
+        }
+        .header-btns { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+        .btn-sm {
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--muted);
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: var(--sans);
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 0 0 28px 0;
+        }
+
+        /* Inputs */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .field.last { margin-bottom: 0; }
+        label {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-family: var(--mono);
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 13px 16px;
+            border-radius: 10px;
+            border: 1.5px solid var(--border);
+            background: var(--surface2);
+            color: var(--text);
+            font-size: 16px;
+            font-family: var(--mono);
+            font-weight: 700;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        input[type="number"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(56,189,248,0.12);
+        }
+        input[type="number"]::placeholder { color: var(--muted); font-weight: 400; }
+
+        /* VIX meter */
+        .vix-meter-wrap { position: relative; }
+        .vix-track {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .vix-fill {
+            height: 100%;
+            border-radius: 2px;
+            width: 20%;
+            transition: width 0.4s ease, background 0.4s ease;
+            background: var(--safe);
+        }
+
+        /* Section label */
+        .section-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin: 24px 0 12px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* Status block */
+        .status-block {
+            border-radius: 12px;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: var(--surface2);
+            border: 1.5px solid var(--border);
+            transition: border-color 0.3s, background 0.3s;
+            min-height: 78px;
+        }
+        .status-block.safe  { border-color: var(--safe);   background: rgba(34,197,94,0.06); }
+        .status-block.warn  { border-color: var(--warn);   background: rgba(245,158,11,0.06); }
+        .status-block.danger { border-color: var(--danger); background: rgba(239,68,68,0.06); }
+        .status-dot {
+            width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+            background: var(--muted);
+            box-shadow: 0 0 0 4px transparent;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        .safe  .status-dot { background: var(--safe);   box-shadow: 0 0 0 4px rgba(34,197,94,0.2); }
+        .warn  .status-dot { background: var(--warn);   box-shadow: 0 0 0 4px rgba(245,158,11,0.2); }
+        .danger .status-dot { background: var(--danger); box-shadow: 0 0 0 4px rgba(239,68,68,0.2); }
+        .status-text { flex: 1; }
+        .status-advice {
+            font-size: 17px;
+            font-weight: 600;
+            line-height: 1.3;
+            margin-bottom: 2px;
+        }
+        .safe  .status-advice { color: var(--safe); }
+        .warn  .status-advice { color: var(--warn); }
+        .danger .status-advice { color: var(--danger); }
+        .status-ratio {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        /* Metrics grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .metric-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 18px;
+            transition: border-color 0.3s;
+        }
+        .metric-card.highlight { border-color: var(--accent); }
+        .metric-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+        .metric-value {
+            font-family: var(--mono);
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--text);
+            transition: color 0.3s;
+        }
+        .metric-sub {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 5px;
+        }
+
+        /* Stress test */
+        .stress-block {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-top: 12px;
+        }
+        .stress-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .stress-badge {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            background: rgba(239,68,68,0.12);
+            color: var(--danger);
+            border: 1px solid rgba(239,68,68,0.25);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+        }
+        .stress-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+        }
+        .stress-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-size: 14px;
+            padding: 5px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .stress-row:last-child { border-bottom: none; }
+        .stress-key { color: var(--muted); }
+        .stress-val { font-family: var(--mono); font-weight: 700; font-size: 15px; }
+
+        /* Target indicator */
+        .target-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--mono);
+            font-size: 11px;
+            background: rgba(56,189,248,0.08);
+            border: 1px solid rgba(56,189,248,0.2);
+            color: var(--accent);
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-top: 8px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; z-index: 100;
+            inset: 0; background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            align-items: center; justify-content: center;
+        }
+        .modal.open { display: flex; }
+        .modal-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 36px;
+            width: 90%; max-width: 440px;
+            position: relative;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+        }
+        .modal-close {
+            position: absolute; top: 18px; right: 18px;
+            cursor: pointer; background: var(--surface2);
+            border: 1px solid var(--border); border-radius: 8px;
+            color: var(--muted); width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; line-height: 1; transition: all 0.2s;
+        }
+        .modal-close:hover { border-color: var(--danger); color: var(--danger); }
+        .modal-title {
+            font-family: var(--mono); font-size: 16px;
+            font-weight: 700; margin-bottom: 20px; color: var(--accent);
+        }
+        .rule-item {
+            display: flex; gap: 12px; padding: 12px 0;
+            border-bottom: 1px solid var(--border); font-size: 14px; line-height: 1.6;
+        }
+        .rule-item:last-child { border-bottom: none; }
+        .rule-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+        .rule-text strong { display: block; font-size: 13px; color: var(--text); margin-bottom: 3px; }
+        .rule-text span { color: var(--muted); font-size: 13px; }
+
+        /* Trading Mode Selector */
+        .mode-selector {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1.5px solid var(--border);
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 11px 6px;
+            border: none;
+            background: var(--surface2);
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            line-height: 1.3;
+        }
+        .mode-btn:last-child { border-right: none; }
+        .mode-btn small {
+            font-size: 10px;
+            font-family: var(--sans);
+            font-weight: 400;
+            letter-spacing: 0;
+            opacity: 0.7;
+        }
+        .mode-btn.active-conservative {
+            background: rgba(56,189,248,0.1);
+            color: var(--accent);
+            border-bottom: 2px solid var(--accent);
+        }
+        .mode-btn.active-moderate {
+            background: rgba(34,197,94,0.1);
+            color: var(--safe);
+            border-bottom: 2px solid var(--safe);
+        }
+        .mode-btn.active-aggressive {
+            background: rgba(245,158,11,0.1);
+            color: var(--warn);
+            border-bottom: 2px solid var(--warn);
+        }
+        .mode-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--mono);
+            font-size: 11px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-top: 8px;
+            margin-right: 6px;
+        }
+        .mode-chip.conservative { background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.2); color: var(--accent); }
+        .mode-chip.moderate     { background: rgba(34,197,94,0.08);  border: 1px solid rgba(34,197,94,0.2);  color: var(--safe); }
+        .mode-chip.aggressive   { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); color: var(--warn); }
+
+        /* OTM Slider */
+        .otm-slider-wrap {
+            margin-bottom: 16px;
+        }
+        .otm-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .otm-label {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--muted);
+            text-align: center;
+            flex: 1;
+            transition: color 0.2s;
+        }
+        .otm-label.active { color: var(--accent); font-weight: 700; }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border);
+            outline: none;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 3px solid var(--surface);
+            box-shadow: 0 0 0 2px var(--accent);
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            box-shadow: 0 0 0 4px rgba(56,189,248,0.25);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 3px solid var(--surface);
+            cursor: pointer;
+        }
+        .otm-info-chip {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(56,189,248,0.06);
+            border: 1px solid rgba(56,189,248,0.15);
+            border-radius: 8px;
+            padding: 8px 14px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--muted);
+            font-family: var(--mono);
+        }
+        .otm-info-chip span { color: var(--accent); font-weight: 700; }
+
+        /* Stress test extra row highlight */
+        .stress-row.put-loss { border-left: 3px solid var(--danger); padding-left: 8px; }
+
+        /* VIX suggestion banner */
+        .vix-suggestion {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            line-height: 1.5;
+            animation: slideIn 0.25s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .vix-suggestion.up {
+            background: rgba(56,189,248,0.07);
+            border: 1px solid rgba(56,189,248,0.25);
+            color: var(--text);
+        }
+        .vix-suggestion.down {
+            background: rgba(34,197,94,0.07);
+            border: 1px solid rgba(34,197,94,0.25);
+            color: var(--text);
+        }
+        .vix-suggestion-icon { font-size: 20px; flex-shrink: 0; }
+        .vix-suggestion-text { flex: 1; }
+        .vix-suggestion-text strong { display: block; margin-bottom: 2px; }
+        .vix-suggestion-text span { color: var(--muted); font-size: 12px; }
+        .vix-suggestion-btn {
+            flex-shrink: 0;
+            border: none;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.05em;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+        }
+        .vix-suggestion-btn:hover { opacity: 0.8; }
+        .up   .vix-suggestion-btn { background: var(--accent); color: #fff; }
+        .down .vix-suggestion-btn { background: var(--safe);   color: #fff; }
+
+        /* Empty state */
+        .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 10px 0; font-family: var(--mono); }
+    </style>
+</head>
+<body data-theme="dark">
+
+<div class="card">
+    <div class="header">
+        <div class="header-title">
+            <span class="header-eyebrow">Risk Manager</span>
+            <h2>Put Strategy<br>Coach</h2>
+        </div>
+        <div class="header-btns">
+            <button class="btn-sm" onclick="toggleModal(true)" aria-label="Show rules">Rules</button>
+            <button class="btn-sm" onclick="toggleTheme()" aria-label="Toggle theme">Theme</button>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Tab Navigation -->
+    <div class="tabs" role="tablist">
+        <button class="tab-btn active" role="tab" aria-selected="true" onclick="switchTab('calculator')">Kalkulator</button>
+        <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('docs')">Dokumentacija</button>
+    </div>
+
+    <!-- Calculator Tab -->
+    <div id="tab-calculator" class="tab-panel active">
+
+    <!-- Trading Mode Selector -->
+    <div style="margin-bottom:6px;">
+        <label style="margin-bottom:8px; display:block;">Trading Mode</label>
+        <div class="mode-selector" role="group" aria-label="Trading mode">
+            <button class="mode-btn" id="mode-conservative" onclick="setMode('conservative')" aria-pressed="false">
+                🛡️ Conservative<br><small>Hard stop 40%</small>
+            </button>
+            <button class="mode-btn active-moderate" id="mode-moderate" onclick="setMode('moderate')" aria-pressed="true">
+                ⚖️ Moderate<br><small>Hard stop 30%</small>
+            </button>
+            <button class="mode-btn" id="mode-aggressive" onclick="setMode('aggressive')" aria-pressed="false">
+                🔥 Aggressive<br><small>Hard stop 20%</small>
+            </button>
+        </div>
+    </div>
+
+    <!-- VIX suggestion banner -->
+    <div id="vix-suggestion" class="vix-suggestion" role="alert">
+        <span class="vix-suggestion-icon" id="vix-sug-icon">⚠️</span>
+        <div class="vix-suggestion-text">
+            <strong id="vix-sug-title">—</strong>
+            <span id="vix-sug-body">—</span>
+        </div>
+        <button class="vix-suggestion-btn" id="vix-sug-btn" onclick="acceptSuggestion()">Primijeni</button>
+    </div>
+
+    <div class="grid">
+        <div class="field">
+            <label for="vix">VIX Index</label>
+            <input type="number" id="vix" value="18" min="5" max="80" step="0.5" oninput="debounce()" aria-label="VIX Index">
+            <div class="vix-track"><div class="vix-fill" id="vix-fill"></div></div>
+        </div>
+        <div class="field">
+            <label for="nlv">Net Liq</label>
+            <input type="number" id="nlv" placeholder="e.g. 100000" min="0" step="1000" oninput="debounce()" aria-label="Net Liquidation Value">
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="field last">
+            <label for="excess">Excess Liquidity</label>
+            <input type="number" id="excess" placeholder="Free margin" min="0" step="1000" oninput="debounce()" aria-label="Excess Liquidity">
+        </div>
+        <div class="field last">
+            <label for="margin-pct">Put Margin %</label>
+            <input type="number" id="margin-pct" value="20" placeholder="e.g. 20" min="1" max="100" step="1" oninput="debounce()" aria-label="Put margin requirement percentage">
+        </div>
+    </div>
+
+    <div class="section-label">Assessment</div>
+
+    <div id="status" class="status-block" role="status" aria-live="polite">
+        <div class="status-dot"></div>
+        <div class="status-text">
+            <div class="status-advice">Enter values above</div>
+            <div class="status-ratio">—</div>
+        </div>
+    </div>
+
+    <div id="capacity-container" style="display:none;">
+        <div class="metrics-grid">
+            <div class="metric-card highlight" id="m-bp">
+                <div class="metric-label">Safe Buying Power</div>
+                <div class="metric-value" id="m-bp-val">—</div>
+                <div class="metric-sub" id="m-bp-sub"></div>
+            </div>
+            <div class="metric-card" id="m-notional">
+                <div class="metric-label">Max Put Notional</div>
+                <div class="metric-value" id="m-notional-val">—</div>
+                <div class="metric-sub" id="m-notional-sub">at <span id="margin-pct-display">20</span>% margin req.</div>
+            </div>
+        </div>
+        <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
+            <span class="target-chip" id="target-chip">Target: —</span>
+            <span class="mode-chip moderate" id="mode-chip">⚖️ Moderate · floor 30%</span>
+        </div>
+
+        <div class="section-label" style="margin-top:20px;">Stress Test · −15% Market Drop</div>
+
+        <!-- Notional + OTM slider -->
+        <div class="field" style="margin-bottom:12px;">
+            <label for="notional-sold">Ukupna nominalna vrijednost prodanih putova</label>
+            <input type="number" id="notional-sold" placeholder="npr. 53000 (opcionalno)" min="0" step="1000" oninput="debounce()" aria-label="Ukupna nominalna vrijednost prodanih putova">
+        </div>
+
+        <div class="otm-slider-wrap">
+            <label style="margin-bottom:10px; display:block;">Pozicija putova</label>
+            <div class="otm-labels">
+                <div class="otm-label" id="lbl-0">Deep OTM<br><small style="opacity:0.6">delta ~0.10</small></div>
+                <div class="otm-label" id="lbl-1">OTM<br><small style="opacity:0.6">delta ~0.20</small></div>
+                <div class="otm-label" id="lbl-2">ATM<br><small style="opacity:0.6">delta ~0.35+</small></div>
+            </div>
+            <input type="range" id="otm-slider" min="0" max="2" step="1" value="1" oninput="updateSlider(); debounce();" aria-label="Pozicija putova">
+            <div class="otm-info-chip">
+                Faktor gubitka na margin vrijednosti: <span id="otm-factor-display">45%</span>
+            </div>
+        </div>
+
+        <div class="stress-block">
+            <div class="stress-header">
+                <span class="stress-badge">SCENARIO</span>
+                <span class="stress-title" id="stress-subtitle">Short delta amplification model</span>
+            </div>
+            <div class="stress-row put-loss" id="st-putloss-row" style="display:none;">
+                <span class="stress-key">Gubitak na put pozicijama</span>
+                <span class="stress-val" id="st-putloss" style="color:var(--danger)">—</span>
+            </div>
+            <div class="stress-row">
+                <span class="stress-key">Post-drop NLV</span>
+                <span class="stress-val" id="st-nlv">—</span>
+            </div>
+            <div class="stress-row">
+                <span class="stress-key">Post-drop Excess Liq.</span>
+                <span class="stress-val" id="st-excess">—</span>
+            </div>
+            <div class="stress-row">
+                <span class="stress-key">Resulting ratio</span>
+                <span class="stress-val" id="st-ratio">—</span>
+            </div>
+            <div class="stress-row">
+                <span class="stress-key">Drawdown (NLV)</span>
+                <span class="stress-val" id="st-drawdown">—</span>
+            </div>
+            <div class="stress-row" style="border-top: 1px solid var(--border); margin-top:4px; padding-top:10px">
+                <span class="stress-key">Verdict</span>
+                <span class="stress-val" id="st-verdict">—</span>
+            </div>
+        </div>
+    </div>
+    </div> <!-- /tab-calculator -->
+
+    <!-- Docs Tab -->
+    <div id="tab-docs" class="tab-panel">
+
+        <div class="doc-section">
+            <div class="doc-section-title">⚙️ Trading Mode</div>
+
+            <div class="doc-block">
+                <strong>Što je Trading Mode?</strong>
+                <p>Trading mode određuje koliko agresivno upravljaš rizikom — konkretno, postavlja <strong>hard stop</strong> (apsolutni pod ispod kojeg ne smiješ pasti) i prilagođava VIX-scaled target cijelu skalu navzgor ili nadolje.</p>
+                <table class="doc-table" style="margin-top:10px;">
+                    <thead>
+                        <tr><th>Mode</th><th>Hard Stop</th><th>VIX base</th><th>VIX cap</th><th>Za koga</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="pill" style="background:rgba(56,189,248,0.12);color:var(--accent)">🛡️ Conservative</span></td>
+                            <td>40%</td><td>50%</td><td>70%</td>
+                            <td>Veći računi, manji apetit za rizik</td>
+                        </tr>
+                        <tr>
+                            <td><span class="pill" style="background:rgba(34,197,94,0.12);color:var(--safe)">⚖️ Moderate</span></td>
+                            <td>30%</td><td>40%</td><td>60%</td>
+                            <td>Standardni pristup, zadana vrijednost</td>
+                        </tr>
+                        <tr>
+                            <td><span class="pill" style="background:rgba(245,158,11,0.12);color:var(--warn)">🔥 Aggressive</span></td>
+                            <td>20%</td><td>30%</td><td>45%</td>
+                            <td>Iskusni traderi, viša tolerancija rizika</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="doc-note" style="margin-top:10px;"><span class="doc-note-icon">⚠️</span>Aggressive mode dopušta znatno niže razine likvidnosti. Koristi samo ako dobro razumiješ rizike i imaš iskustva s margin callovima.</div>
+            </div>
+
+            <div class="doc-block">
+                <strong>Kako mode mijenja VIX formulu?</strong>
+                <p>Svaki mode ima vlastitu bazu i nagib VIX-skaliranja:</p>
+                <div class="doc-formula">
+                    Target = VIX_base + max(0, VIX − 15) × VIX_slope<br><br>
+                    Conservative: 50% + (VIX−15) × 0.50  [cap 70%]<br>
+                    Moderate:     40% + (VIX−15) × 0.75  [cap 60%]<br>
+                    Aggressive:   30% + (VIX−15) × 0.50  [cap 45%]
+                </div>
+            </div>
+        </div>
+
+        <div class="doc-section">
+
+            <div class="doc-block">
+                <strong>VIX Index</strong>
+                <p>Mjera volatilnosti tržišta (S&P 500). Što je VIX viši, tržište je nervoznije i rizičnije. Tipične vrijednosti: ispod 20 = mirno tržište, 20–30 = povišena napetost, iznad 30 = strah/kriza.</p>
+                <div class="doc-note"><span class="doc-note-icon">💡</span>Promjenom VIX-a alat automatski prilagođava koliki postotak likvidnosti moraš zadržati.</div>
+            </div>
+
+            <div class="doc-block">
+                <strong>Net Liq (Net Liquidation Value)</strong>
+                <p>Ukupna vrijednost tvog portfelja ako bi sve pozicije zatvorio odmah — gotovina + tržišna vrijednost svih pozicija. Ovu vrijednost možeš pronaći direktno u svom broker sučelju.</p>
+            </div>
+
+            <div class="doc-block">
+                <strong>Excess Liquidity</strong>
+                <p>Slobodni kapital koji ti broker prikazuje kao "slobodan margin" — iznos koji možeš koristiti za nove pozicije bez margin calla. Uvijek manji od NLV jer postoji kapital vezan u otvorenim pozicijama.</p>
+            </div>
+
+            <div class="doc-block">
+                <strong>Put Margin %</strong>
+                <p>Postotak nominalne vrijednosti ugovora koji tvoj broker zahtijeva kao kolateral za jednu short put poziciju. Ovisi o brokeru i dionici. Tipično: 15–25% za standardne dionice.</p>
+                <div class="doc-note"><span class="doc-note-icon">⚠️</span>Provjeri ovaj broj u svom broker sučelju — razlikuje se po brokeru i instrumentu.</div>
+            </div>
+
+            <div class="doc-block">
+                <strong>Ukupna nominalna vrijednost prodanih putova</strong>
+                <p>Zbroj nominalnih vrijednosti svih tvojih aktivnih short put pozicija. Nominalna vrijednost = strike cijena × 100 × broj ugovora.</p>
+                <div class="doc-formula">
+                    Primjer: 2 ugovora GOOG, strike 265<br>
+                    Nominalno = 265 × 100 × 2 = 53.000
+                </div>
+                <p style="margin-top:8px;">Ovaj broj alat koristi u stress testu za izračun stvarnog gubitka na tvojim pozicijama pri padu od 15%.</p>
+            </div>
+        </div>
+
+        <div class="doc-section">
+            <div class="doc-section-title">🔢 Kako alat računa?</div>
+
+            <div class="doc-block">
+                <strong>Osnovni omjer (Ratio)</strong>
+                <p>Temeljni pokazatelj: koliki postotak tvog NLV-a čini slobodan kapital.</p>
+                <div class="doc-formula">
+                    Ratio = (Excess Liquidity ÷ Net Liq) × 100
+                </div>
+            </div>
+
+            <div class="doc-block">
+                <strong>VIX-prilagođeni target (dinamički minimum)</strong>
+                <p>Minimalni sigurni omjer koji se povećava s VIX-om. Pri višem VIX-u moraš imati više slobodnog kapitala kao zaštitu.</p>
+                <div class="doc-formula">
+                    Target = 40% + max(0, VIX − 15) × 0.75%<br>
+                    Maksimalni cap: 60%<br><br>
+                    Primjeri:<br>
+                    VIX 15 → 40.0% | VIX 20 → 43.75%<br>
+                    VIX 25 → 47.5% | VIX 35 → 55.0%
+                </div>
+            </div>
+
+            <div class="doc-block">
+                <strong>Safe Buying Power</strong>
+                <p>Koliko kapitala možeš slobodno koristiti, a da ostaneš iznad VIX-prilagođenog targeta.</p>
+                <div class="doc-formula">
+                    Safe BP = Excess Liq − (Target% × NLV)
+                </div>
+            </div>
+
+            <div class="doc-block">
+                <strong>Max Put Notional</strong>
+                <p>Maksimalna ukupna nominalna vrijednost put opcija koje možeš prodati uz zadani margin zahtjev, a da ostaneš u sigurnoj zoni.</p>
+                <div class="doc-formula">
+                    Max Notional = Safe BP ÷ (Put Margin% ÷ 100)<br><br>
+                    Primjer: Safe BP = 10.000, margin = 20%<br>
+                    Max Notional = 10.000 ÷ 0.20 = 50.000
+                </div>
+            </div>
+        </div>
+
+        <div class="doc-section">
+            <div class="doc-section-title">🚦 Koje su zone?</div>
+
+            <div class="doc-block">
+                <table class="doc-table">
+                    <thead>
+                        <tr>
+                            <th>Zona</th>
+                            <th>Uvjet</th>
+                            <th>Akcija</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="pill pill-safe">ZELENA</span></td>
+                            <td>Ratio ≥ VIX target</td>
+                            <td>Slobodan za nove pozicije</td>
+                        </tr>
+                        <tr>
+                            <td><span class="pill pill-warn">ŽUTA</span></td>
+                            <td>30% ≤ Ratio &lt; target</td>
+                            <td>Drži — ne dodavaj</td>
+                        </tr>
+                        <tr>
+                            <td><span class="pill pill-danger">CRVENA</span></td>
+                            <td>Ratio &lt; 30%</td>
+                            <td>Hitno smanjuj pozicije</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="doc-note"><span class="doc-note-icon">🛑</span>30% je <strong>apsolutni pod preživljavanja</strong> — ispod te razine broker može prisilno zatvoriti tvoje pozicije.</div>
+            </div>
+        </div>
+
+        <div class="doc-section">
+            <div class="doc-section-title">💥 Stress test — simulacija pada od 15%</div>
+
+            <div class="doc-block">
+                <strong>Zašto nije samo proporcionalni pad?</strong>
+                <p>Kad tržište padne 15%, NLV i Excess Liquidity padaju proporcionalno. Ali ti si prodao put opcije — one su sada vrijednije, i ako ih zatvoriš, ideš u minus. Taj gubitak dodatno smanjuje NLV i Excess.</p>
+            </div>
+
+            <div class="doc-block">
+                <strong>Kako funkcionira kliznik (Deep OTM / OTM / ATM)?</strong>
+                <p>Kliznik određuje koliko su tvoji putovi "out of the money" — tj. koliko daleko je strike od trenutne cijene. To direktno utječe na to koliko će premija narasti pri padu od 15%.</p>
+                <table class="doc-table" style="margin-top:10px;">
+                    <thead><tr><th>Pozicija</th><th>Delta</th><th>Faktor gubitka</th><th>Opis</th></tr></thead>
+                    <tbody>
+                        <tr><td>Deep OTM</td><td>~0.10</td><td>25%</td><td>Strike daleko ispod cijene, mali rizik</td></tr>
+                        <tr><td>OTM</td><td>~0.20</td><td>45%</td><td>Tipični 20-delta put, umjereni rizik</td></tr>
+                        <tr><td>ATM</td><td>~0.35+</td><td>70%</td><td>Strike blizu cijene, visoki rizik</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="doc-block">
+                <strong>Formula s nominalnom vrijednošću</strong>
+                <p>Ako uneseš ukupnu nominalnu vrijednost prodanih putova, stress test računa stvarni procijenjeni gubitak:</p>
+                <div class="doc-formula">
+                    Gubitak na putovima = Nominalno × Margin% × Faktor gubitka<br><br>
+                    Primjer (OTM, margin 20%, nominalno 100k):<br>
+                    = 100.000 × 0.20 × 0.45 = <strong>9.000</strong><br><br>
+                    Stress NLV    = (NLV × 0.85) − 9.000<br>
+                    Stress Excess = (Excess × 0.85) − 9.000
+                </div>
+                <div class="doc-note"><span class="doc-note-icon">📌</span>Ako ne uneseš nominalnu vrijednost, alat koristi generički paušalni haircut od 30% na Excess kao fallback procjenu.</div>
+            </div>
+
+            <div class="doc-block">
+                <strong>Drawdown (NLV)</strong>
+                <p>Ukupni gubitak vrijednosti portfelja u apsolutnom iznosu — kombinacija pada tržišta i gubitka na short put pozicijama. Uvijek negativan broj, prikazan s predznakom −.</p>
+                <div class="doc-formula">
+                    Drawdown = Stress NLV − NLV
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- /tab-docs -->
+
+</div> <!-- /card -->
+
+<!-- Rules Modal -->
+<div id="rulesModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-box">
+        <button class="modal-close" onclick="toggleModal(false)" aria-label="Close">×</button>
+        <div class="modal-title" id="modal-title">📜 Linear Risk Scaling</div>
+        <div class="rule-item">
+            <span class="rule-icon">🛑</span>
+            <div class="rule-text">
+                <strong>Hard Stop: 30%</strong>
+                <span>If excess liq / NLV falls below 30%, immediate position reduction is required. This is the survival floor.</span>
+            </div>
+        </div>
+        <div class="rule-item">
+            <span class="rule-icon">📈</span>
+            <div class="rule-text">
+                <strong>VIX-Scaled Target (Linear)</strong>
+                <span>Safe minimum scales with volatility: <b>VIX 15 → 40%</b>, <b>VIX 35 → 55%</b>, capped at 60%. Every +1 VIX point adds 0.75% to the required ratio.</span>
+            </div>
+        </div>
+        <div class="rule-item">
+            <span class="rule-icon">⚡</span>
+            <div class="rule-text">
+                <strong>Stress Test Model</strong>
+                <span>A 15% drop reduces both NLV and excess liquidity proportionally, keeping the base ratio stable. However, short put delta increases during a crash — modelled here as an additional 30% haircut on excess liquidity above the base proportional drop.</span>
+            </div>
+        </div>
+        <div class="rule-item">
+            <span class="rule-icon">🧮</span>
+            <div class="rule-text">
+                <strong>Max Put Notional</strong>
+                <span>Safe buying power divided by your put margin % gives the maximum safe notional value of puts to sell.</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Trading Mode config
+    const MODES = {
+        conservative: { hardStop: 40, vixBase: 50, vixSlope: 0.50, vixCap: 70, label: '🛡️ Conservative', emoji: '🛡️', chipClass: 'conservative' },
+        moderate:     { hardStop: 30, vixBase: 40, vixSlope: 0.75, vixCap: 60, label: '⚖️ Moderate',     emoji: '⚖️', chipClass: 'moderate'     },
+        aggressive:   { hardStop: 20, vixBase: 30, vixSlope: 0.50, vixCap: 45, label: '🔥 Aggressive',   emoji: '🔥', chipClass: 'aggressive'   },
+    };
+    let currentMode = 'moderate';
+
+    function setMode(mode) {
+        currentMode = mode;
+        // Update button states
+        Object.keys(MODES).forEach(m => {
+            const btn = document.getElementById('mode-' + m);
+            btn.className = 'mode-btn' + (m === mode ? ' active-' + m : '');
+            btn.setAttribute('aria-pressed', m === mode ? 'true' : 'false');
+        });
+        // Update chip
+        const cfg = MODES[mode];
+        const chip = document.getElementById('mode-chip');
+        chip.className = 'mode-chip ' + cfg.chipClass;
+        chip.textContent = `${cfg.label} · floor ${cfg.hardStop}%`;
+        debounce();
+    }
+
+
+    // VIX thresholds for mode suggestions
+    // suggestUp:   VIX above this → suggest moving to a more conservative mode
+    // suggestDown: VIX below this → suggest relaxing to a less conservative mode
+    const VIX_THRESHOLDS = {
+        aggressive:   { suggestUp: 20, upTarget: 'moderate'     },
+        moderate:     { suggestUp: 25, upTarget: 'conservative', suggestDown: 18, downTarget: 'aggressive' },
+        conservative: {                                           suggestDown: 20, downTarget: 'moderate'   },
+    };
+
+    let suggestedMode = null;
+
+    function updateVixSuggestion(vix) {
+        const banner  = document.getElementById('vix-suggestion');
+        const thresh  = VIX_THRESHOLDS[currentMode];
+        suggestedMode = null;
+
+        if (!isNaN(vix) && thresh.suggestUp && vix >= thresh.suggestUp) {
+            // Suggest stepping up to more conservative
+            suggestedMode = thresh.upTarget;
+            const target  = MODES[suggestedMode];
+            banner.className  = 'vix-suggestion up';
+            banner.style.display = 'flex';
+            document.getElementById('vix-sug-icon').textContent  = '⚠️';
+            document.getElementById('vix-sug-title').textContent = `VIX ${vix.toFixed(1)} — preporučujemo ${target.label}`;
+            document.getElementById('vix-sug-body').textContent  =
+                `VIX je iznad ${thresh.suggestUp}. Konzervativniji mode bolje štiti pri povišenoj volatilnosti.`;
+            document.getElementById('vix-sug-btn').textContent   = `Prebaci na ${target.emoji}`;
+
+        } else if (!isNaN(vix) && thresh.suggestDown && vix <= thresh.suggestDown) {
+            // Suggest stepping down to less conservative
+            suggestedMode = thresh.downTarget;
+            const target  = MODES[suggestedMode];
+            banner.className  = 'vix-suggestion down';
+            banner.style.display = 'flex';
+            document.getElementById('vix-sug-icon').textContent  = '✅';
+            document.getElementById('vix-sug-title').textContent = `VIX ${vix.toFixed(1)} — možeš koristiti ${target.label}`;
+            document.getElementById('vix-sug-body').textContent  =
+                `VIX je ispod ${thresh.suggestDown}. Tržište je mirno — možeš slobodnije upravljati pozicijama.`;
+            document.getElementById('vix-sug-btn').textContent   = `Prebaci na ${target.emoji}`;
+
+        } else {
+            banner.style.display = 'none';
+            suggestedMode = null;
+        }
+    }
+
+    function acceptSuggestion() {
+        if (suggestedMode) {
+            setMode(suggestedMode);
+            // setMode already calls debounce → will re-run calculate + updateVixSuggestion
+        }
+    }
+
+
+    // OTM slider config
+    const OTM_CONFIGS = [
+        { label: 'Deep OTM', delta: 0.10, lossFactor: 0.25 },
+        { label: 'OTM',      delta: 0.20, lossFactor: 0.45 },
+        { label: 'ATM',      delta: 0.35, lossFactor: 0.70 },
+    ];
+
+    function updateSlider() {
+        const val = parseInt(document.getElementById('otm-slider').value);
+        document.querySelectorAll('.otm-label').forEach((el, i) => {
+            el.classList.toggle('active', i === val);
+        });
+        document.getElementById('otm-factor-display').textContent =
+            (OTM_CONFIGS[val].lossFactor * 100).toFixed(0) + '%';
+    }
+    updateSlider();
+
+    function switchTab(name) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+        document.getElementById('tab-' + name).classList.add('active');
+        const btns = document.querySelectorAll('.tab-btn');
+        const idx = name === 'calculator' ? 0 : 1;
+        btns[idx].classList.add('active');
+        btns[idx].setAttribute('aria-selected', 'true');
+    }
+
+    let debounceTimer;
+    function debounce() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(calculate, 280);
+    }
+
+    function toggleTheme() {
+        const t = document.body.getAttribute('data-theme');
+        document.body.setAttribute('data-theme', t === 'dark' ? 'light' : 'dark');
+    }
+
+    function toggleModal(show) {
+        const m = document.getElementById('rulesModal');
+        m.classList.toggle('open', show);
+    }
+    document.getElementById('rulesModal').addEventListener('click', function(e) {
+        if (e.target === this) toggleModal(false);
+    });
+
+    function fmt(n) {
+        if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+        if (Math.abs(n) >= 1e3) return (n / 1e3).toFixed(1) + 'k';
+        return Math.abs(n).toFixed(0);
+    }
+
+    function calculate() {
+        const vix      = parseFloat(document.getElementById('vix').value);
+        const nlv      = parseFloat(document.getElementById('nlv').value);
+        const excess   = parseFloat(document.getElementById('excess').value);
+        const marginPct = parseFloat(document.getElementById('margin-pct').value) || 20;
+
+        // Update VIX meter
+        const vixFill = document.getElementById('vix-fill');
+        if (!isNaN(vix)) {
+            const pct = Math.min(100, Math.max(0, ((vix - 10) / 60) * 100));
+            vixFill.style.width = pct + '%';
+            vixFill.style.background = vix < 20 ? 'var(--safe)' : vix < 30 ? 'var(--warn)' : 'var(--danger)';
+        }
+
+        // VIX-based mode suggestion
+        updateVixSuggestion(vix);
+
+        document.getElementById('margin-pct-display').textContent = isNaN(marginPct) ? 20 : marginPct;
+
+        const statusBox = document.getElementById('status');
+        const capCont   = document.getElementById('capacity-container');
+
+        if (isNaN(vix) || isNaN(nlv) || isNaN(excess) || nlv <= 0) {
+            statusBox.className = 'status-block';
+            statusBox.querySelector('.status-advice').textContent = 'Enter values above';
+            statusBox.querySelector('.status-ratio').textContent  = '—';
+            capCont.style.display = 'none';
+            return;
+        }
+
+        if (excess > nlv) {
+            statusBox.className = 'status-block danger';
+            statusBox.querySelector('.status-advice').textContent = 'Excess liquidity cannot exceed NLV';
+            statusBox.querySelector('.status-ratio').textContent  = 'Check your inputs';
+            capCont.style.display = 'none';
+            return;
+        }
+
+        const ratio = (excess / nlv) * 100;
+
+        // Mode-aware VIX-scaled target
+        const modeCfg = MODES[currentMode];
+        const hardStop = modeCfg.hardStop;
+        let minSafeRatio = modeCfg.vixBase + (Math.max(0, vix - 15) * modeCfg.vixSlope);
+        minSafeRatio = Math.min(modeCfg.vixCap, minSafeRatio);
+
+        document.getElementById('target-chip').textContent = `VIX-adjusted target: ${minSafeRatio.toFixed(1)}%`;
+
+        // Determine zone
+        let zone, advice, ratioLabel;
+        if (ratio < hardStop) {
+            zone = 'danger';
+            advice = 'Critical — trim positions immediately';
+            ratioLabel = `Ratio: ${ratio.toFixed(1)}% (Floor: ${hardStop}%)`;
+        } else if (ratio < minSafeRatio) {
+            zone = 'warn';
+            advice = 'Caution — hold, do not add';
+            ratioLabel = `Ratio: ${ratio.toFixed(1)}% (Target: ${minSafeRatio.toFixed(1)}%)`;
+        } else {
+            zone = 'safe';
+            advice = 'Clear — room to add exposure';
+            ratioLabel = `Ratio: ${ratio.toFixed(1)}% (Target: ${minSafeRatio.toFixed(1)}%)`;
+        }
+
+        statusBox.className = 'status-block ' + zone;
+        statusBox.querySelector('.status-advice').textContent = advice;
+        statusBox.querySelector('.status-ratio').textContent  = ratioLabel;
+
+        capCont.style.display = 'block';
+
+        // Buying power & notional
+        const bpLeft = excess - (minSafeRatio / 100) * nlv;
+        const needed = -bpLeft; // positive when deficit
+        const maxNotional = bpLeft > 0 ? bpLeft / (marginPct / 100) : 0;
+
+        const bpCard = document.getElementById('m-bp');
+        const bpVal  = document.getElementById('m-bp-val');
+        const bpSub  = document.getElementById('m-bp-sub');
+
+        if (zone === 'safe') {
+            bpVal.textContent  = fmt(bpLeft);
+            bpVal.style.color  = 'var(--safe)';
+            bpSub.textContent  = 'available to deploy';
+        } else if (zone === 'warn') {
+            bpVal.textContent  = fmt(needed);
+            bpVal.style.color  = 'var(--warn)';
+            bpSub.textContent  = 'needed to reach target';
+        } else {
+            bpVal.textContent  = fmt((hardStop / 100 * nlv) - excess);
+            bpVal.style.color  = 'var(--danger)';
+            bpSub.textContent  = `needed to reach survival floor (${hardStop}%)`;
+        }
+
+        const notVal = document.getElementById('m-notional-val');
+        const notSub = document.getElementById('m-notional-sub');
+        if (zone === 'safe' && maxNotional > 0) {
+            notVal.textContent = fmt(maxNotional);
+            notVal.style.color = 'var(--safe)';
+        } else {
+            notVal.textContent = '—';
+            notVal.style.color = 'var(--muted)';
+        }
+        document.getElementById('margin-pct-display').textContent = marginPct;
+
+        // ── Stress Test ─────────────────────────────────────────────────────
+        const dropFactor  = 0.85;
+        const otmVal      = parseInt(document.getElementById('otm-slider').value);
+        const otmCfg      = OTM_CONFIGS[otmVal];
+        const notionalSold = parseFloat(document.getElementById('notional-sold').value) || 0;
+
+        // Base: proportional drop on both NLV and Excess
+        let stressNLV    = nlv   * dropFactor;
+        let stressExcess = excess * dropFactor;
+
+        // If user entered sold notional: calculate P&L loss on short puts
+        // Loss = notional × margin% × lossFactor (how much of margin value is lost)
+        let putLoss = 0;
+        if (notionalSold > 0) {
+            putLoss = notionalSold * (marginPct / 100) * otmCfg.lossFactor;
+            stressNLV    -= putLoss;
+            stressExcess -= putLoss;
+            document.getElementById('st-putloss-row').style.display = 'flex';
+            document.getElementById('st-putloss').textContent = '−' + fmt(putLoss);
+            document.getElementById('stress-subtitle').textContent =
+                `${otmCfg.label} · faktor ${(otmCfg.lossFactor * 100).toFixed(0)}%`;
+        } else {
+            // Fallback: generic delta haircut if no notional entered
+            stressExcess = stressExcess * (1 - 0.30);
+            document.getElementById('st-putloss-row').style.display = 'none';
+            document.getElementById('stress-subtitle').textContent = 'Unesi nominalnu vrijednost za precizniji izračun';
+        }
+
+        // Guard against negative excess
+        stressExcess = Math.max(stressExcess, 0);
+
+        const stressRatio = stressNLV > 0 ? (stressExcess / stressNLV) * 100 : 0;
+        const drawdown    = stressNLV - nlv;
+
+        document.getElementById('st-nlv').textContent      = fmt(stressNLV);
+        document.getElementById('st-excess').textContent   = fmt(stressExcess);
+        document.getElementById('st-ratio').textContent    = stressRatio.toFixed(1) + '%';
+        document.getElementById('st-drawdown').textContent = '−' + fmt(Math.abs(drawdown));
+
+        const verdict = document.getElementById('st-verdict');
+        if (stressExcess <= 0 || stressRatio < hardStop) {
+            verdict.textContent = '⚠ Margin call rizik';
+            verdict.style.color = 'var(--danger)';
+        } else if (stressRatio < minSafeRatio) {
+            verdict.textContent = '⚡ Oprezna zona';
+            verdict.style.color = 'var(--warn)';
+        } else {
+            verdict.textContent = '✓ Preživljava';
+            verdict.style.color = 'var(--safe)';
+        }
+    }
+
+    // Run on load with default VIX
+    calculate();
+</script>
+</body>
+</html>
